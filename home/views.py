@@ -1,9 +1,10 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from rest_framework.authtoken.models import Token
 from .serializers import *
-
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
 # we cannot use the html here as we are using rest framework which returns json data
@@ -106,39 +107,24 @@ def get_book(request):
 #             'message': 'invalid id'
 #         })
 
-
 class StudentAPI(APIView):
-
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        student_objs = Student.objects.all()
-        serializer = StudentSerializer(student_objs, many=True)
+        student_obj = Student.objects.all()
+        serializer = StudentSerializer(student_obj, many=True)
         return Response({
             'status': 200,
-            'data': serializer.data
+            'data': serializer.data,
+            'message': 'data successfully fetched'
         })
-
-    def post(self, request):
-        student_obj = StudentSerializer(data=request.data)
-        if student_obj.is_valid():
-            student_obj.save()
-            return Response({
-                'status': 200,
-                'data': student_obj.data,
-                'message': 'Everything is fine'
-            })
-        else:
-            # print(student_obj.errors)
-            return Response({
-                'status': 404,
-                'error': student_obj.errors,
-                'message': 'you send the wrong data'
-            })
 
     def patch(self, request):
         try:
             #                                    id from front end
             student_obj = Student.objects.get(id=request.data['id'])
-            serializer = StudentSerializer(student_obj, data=request.data, partial=True)
+            serializer = StudentSerializer(
+                student_obj, data=request.data, partial=True)
 
             if serializer.is_valid():
                 serializer.save()
@@ -186,7 +172,7 @@ class StudentAPI(APIView):
                 return Response({
                     'status': 200,
                     'data': serializer.data,
-                    'message': 'Everything is fine'
+                    'message': 'data successfully updated'
                 })
             else:
                 print(serializer.errors)
@@ -201,3 +187,26 @@ class StudentAPI(APIView):
                 'error': e,
                 'message': 'invalid id'
             })
+
+
+class RegisterUser(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()    
+            user = User.objects.get(username = serializer.data['username'])
+            token_obj, _ = Token.objects.get_or_create(user = user)
+
+        
+            return Response({
+                'status': 200,
+                'data': serializer.data,
+                'message': 'user successfully created'
+            })
+        else:                   
+            return Response({
+                'status': 404,
+                'error': serializer.errors,
+                'message': 'Something went wrong'
+            })
+    
