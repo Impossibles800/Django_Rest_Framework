@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from home import views
-from home.views import StudentAPI
+from home.views import RegisterUser, StudentAPI
 
 urlpatterns = [
     # path('', views.home, name='home'),
@@ -10,4 +10,5 @@ urlpatterns = [
     # path('delete-student/<id>/', views.delete_student, name='delete_student'),
     path('get-book/', views.get_book, name='get_book'),
     path('student/', StudentAPI.as_view(), name='student'),
+    path('register/', RegisterUser.as_view(), name='register'),
 ]
