@@ -1,12 +1,16 @@
+from datetime import timedelta
+
+from django.conf import settings
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import *
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 
-# Create your views here.
+
 # we cannot use the html here as we are using rest framework which returns json data
 
 # @api_view(['GET'])
@@ -16,6 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 #     serializer = StudentSerializer(students, many=True)# Using the serializer
 
 #   return Response({
+
 #     'status': 200,
 #     'data': serializer.data
 #   })
@@ -108,8 +113,9 @@ def get_book(request):
 #         })
 
 class StudentAPI(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         student_obj = Student.objects.all()
         serializer = StudentSerializer(student_obj, many=True)
@@ -193,20 +199,49 @@ class RegisterUser(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()    
-            user = User.objects.get(username = serializer.data['username'])
-            token_obj, _ = Token.objects.get_or_create(user = user)
+            serializer.save()
+            user = User.objects.get(username=serializer.data['username'])
+            refresh = RefreshToken.for_user(user)
 
-        
+
             return Response({
                 'status': 200,
                 'data': serializer.data,
-                'message': 'user successfully created'
+                'message': 'user successfully created',
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
             })
-        else:                   
+        else:
             return Response({
                 'status': 404,
                 'error': serializer.errors,
                 'message': 'Something went wrong'
             })
-    
+
+    SIMPLE_JWT = {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+        'ROTATE_REFRESH_TOKENS': False,
+        'BLACKLIST_AFTER_ROTATION': True,
+        'UPDATE_LAST_LOGIN': False,
+
+        'ALGORITHM': 'HS256',
+        'SIGNING_KEY': settings.SECRET_KEY,
+        'VERIFYING_KEY': None,
+        'AUDIENCE': None,
+        'ISSUER': None,
+
+        'AUTH_HEADER_TYPES': ('Bearer',),
+        'USER_ID_FIELD': 'id',
+        'USER_ID_CLAIM': 'user_id',
+        'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+        'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+        'TOKEN_TYPE_CLAIM': 'token_type',
+
+        'JTI_CLAIM': 'jti',
+
+        'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+        'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+        'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    }
