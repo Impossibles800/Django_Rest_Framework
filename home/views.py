@@ -215,7 +215,7 @@ class RegisterUser(APIView):
             return Response({
                 'status': 404,
                 'error': serializer.errors,
-                'message': 'Something went wrong'
+                'message': 'Try with different username'
             })
 
     SIMPLE_JWT = {
