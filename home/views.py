@@ -1,15 +1,12 @@
-from datetime import timedelta
-
-from django.conf import settings
-from rest_framework.authtoken.models import Token
+from django.utils.datetime_safe import datetime
+from rest_framework import generics
 from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import RefreshToken
+
+from .helper import save_pdf
 from .serializers import *
-from rest_framework import generics
+
 
 # we cannot use the html here as we are using rest framework which returns json data
 
@@ -252,9 +249,30 @@ class StudentGeneric(generics.ListAPIView, generics.CreateAPIView):
     queryset = Student.objects.all();
     serializer_class = StudentSerializer
 
+
 # Update and delete method
 
 class StudentGeneric1(generics.UpdateAPIView, generics.DestroyAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    lookup_field = 'id' # for handing the id passed in the url
+    lookup_field = 'id'  # for handing the id passed in the url
+
+
+class GeneratePdf(APIView):
+    def get(self, request):
+        student_obj = Student.objects.all()
+        params = {
+            'today': datetime.date.today(),
+            'student': student_obj,
+        }
+        file_name, status = save_pdf(params)
+
+        if not status:
+            return Response({
+                'status': 404,
+                'message': 'something went wrong'
+            })
+        return Response({
+            'status': 200,
+            'path': f'/media/{file_name}.pdf'
+        })

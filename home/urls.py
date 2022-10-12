@@ -1,11 +1,10 @@
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from home import views
 from .views import *
+from django.urls import path
 
-
-
-
+from home import views
+from .views import *
 
 urlpatterns = [
     # path('', views.home, name='home'),
@@ -17,4 +16,5 @@ urlpatterns = [
     # path('register/', RegisterUser.as_view(), name='register'),
     path('generic-student/', StudentGeneric.as_view(), name='generic-student'),
     path('generic-student/<id>/', StudentGeneric1.as_view(), name='generic-student'),
+    path('pdf/', GeneratePdf.as_view(), name='pdf'),
 ]
